@@ -1,0 +1,160 @@
+---
+title: "Course Project - Assignment "
+author: "Joly Tematio"
+date: "July 21, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Course Project - Assignment on Activity Monitoring Data
+
+We'll start with an exploratory analysis and look how our dataset is structured.
+
+```{r echo=TRUE, comment=""}
+setwd("C:/Users/jolivette.tematio/Documents/Perso/R/Coursera/Rep.Research")
+data <- read.csv(file = "activity.csv")
+head(data)
+dim(data)
+str(data)
+
+#cheking the missing values
+missing_dt <- data[is.na(data$steps),]
+dim(missing_dt)
+
+sum(data$steps & data$date, na.rm = TRUE)
+```
+
+
+## I- What is mean total number of steps taken per day?
+
+Data without the missing values
+```{r echo=TRUE, comment=""}
+dt2 <- data[!is.na(data$steps),]
+```
+Calculate the total number of steps taken per day
+
+```{r echo=TRUE, comment=""}
+total_number_steps <- with(data, tapply(steps,as.factor(data$date), sum, na.rm = T))
+```
+
+Make a histogram of the total number of steps taken each day
+
+```{r echo=TRUE, comment=""}
+hist(total_number_steps, main = "Histogram of total number of steps taken per day", xlab = "Total number of steps", ylab = "Relative Frequency")
+```
+
+Calculate and report the mean and median of the total number of steps taken per day
+
+```{r echo=TRUE, comment=""}
+summary(total_number_steps)
+```
+
+
+## II- What is the average daily activity pattern?
+
+
+```{r echo=TRUE, comment=""}
+mean_steps <- with(dt2, tapply(steps, dt2$interval, mean))
+interval <- levels(as.factor(dt2$interval))
+plot(interval, mean_steps, type = "l", main = "Time series plot of the \n average number of steps taken", xlab = "interval", ylab = "Mean steps")
+```
+
+## III- Imputing missing values
+
+1- Determine and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+
+```{r echo=TRUE, comment=""}
+length(missing_dt$steps)
+```
+
+2- Devise a strategy for filling in all of the missing values in the dataset.
+
+```{r echo=TRUE, comment=""}
+mean_steps <- with(dt2, tapply(steps, dt2$interval, mean))
+missing_dt$steps <- mean_steps
+str(dt2)
+```
+
+2- Create a new dataset that is equal to the original dataset but with the missing data filled in.
+
+```{r echo=TRUE, comment=""}
+new_data <- rbind(dt2, missing_dt)
+str(new_data)
+new_data <- new_data[order(new_data$date), ]
+```
+
+3- Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. 
+
+```{r echo=TRUE, comment=""}
+total_number_steps2 <- with(new_data, tapply(steps, as.factor(new_data$date), sum))
+#Make a histogram of the total number of steps taken each day
+hist(total_number_steps2, main = "Histogram of total number of steps taken per day", xlab = "Total number of steps")
+```
+
+
+4- Calculate and report the mean and median of the total number of steps taken per day.
+
+Mean and median total number of steps taken per day WITHOUT filling in the missing values
+```{r echo=TRUE, comment=""}
+summary(total_number_steps)
+```
+
+Mean and median total number of steps taken per day WITH filling in the missing values
+```{r echo=TRUE, comment=""}
+summary(total_number_steps2)
+```
+
+Yes, mean and median total number of steps taken per day for the filled in missing values differ from these of the origional dataset.
+
+
+## IV - Are there differences in activity patterns between weekdays and weekends?
+
+For this part the weekdays() function may be of some help here. Use the dataset with the filled-in missing values for this part.
+
+1- Create a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
+
+```{r echo=TRUE, comment="", warning=FALSE}
+new_data$days <- weekdays(as.Date(new_data$date))
+# find weekend features in the dataset
+weekend_feature <- grep("Saturday|Sunday", new_data$days, ignore.case = T)
+# subset data of the weekend
+weekend_dt<-  new_data[weekend_feature, ]
+weekend_dt$weekday <- "weekend"
+
+# subset data of the weekday
+weekday_dt <- subset(new_data,new_data$days!=weekend_feature)
+```
+
+2- Create a new dataset containing 2 new variable "days" and weekday" 
+days: indicates the days in the week
+weekday: indicate the days are at the "weekend" or "weekday"
+
+```{r echo=TRUE, comment=""}
+weekday_dt$weekday <- "weekday"
+new_dt2 <- rbind(weekday_dt, weekend_dt)
+```
+
+3- Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).
+
+
+```{r echo=TRUE, comment="", warning=FALSE}
+library(ggplot2)
+mean_number_steps <- aggregate(steps~ interval+weekday, new_dt2, mean)
+g <- qplot(interval, steps, data = mean_number_steps, facets = weekday~.)
+g + geom_line(size = 1) + ylab("Mean steps") + ggtitle("Average number of steps taken, \n averaged across all weekday days or weekend days ")
+```
+
+
+
+## V - Acknowledgement
+Thank you very much for your effort to review my code!
+
+
+## VI - References
+
+*R Programming for Data Science, Roger D. Peng.
+*Exploratory Data Analyis with R, Roger D. Peng
+*Report Writing for Data Science in R, Roger D. Peng
